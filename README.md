@@ -22,5 +22,6 @@ DATA_BASE_NAME = Fund
 ```
 ### 3 运行爬虫
 ```bash
-python src/CrawlerFacade.py
+# 会开始抓取百度下所有的词组和拼音以及常见的含义。
+python CloverPinyinBuild.py
 ```
