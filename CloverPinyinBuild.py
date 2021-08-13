@@ -7,6 +7,7 @@ from io import StringIO, BytesIO
 from urllib.parse import unquote, quote
 import pymysql
 from Logger import logger
+from Config import config
 
 header_str = '''Host:hanyu.baidu.com
 Connection:keep-alive
@@ -147,11 +148,11 @@ u ū ú ǔ ù
                 logger.error(f"word: {word}, pinyin: {pinyin}, error_info: {e}")
 
     def getConnection(self):
-        host = '39.98.80.136'
-        port = 3306
-        db = 'character'
-        user = 'job'
-        password = 'laiyanhua'
+        host = config["MYSQL"]["HOST"]
+        port = config["MYSQL"]["PORT"]
+        db = config["MYSQL"]["DATA_BASE_NAME"]
+        user = config["MYSQL"]["USERNAME"]
+        password = config["MYSQL"]["PASSWORD"]
         conn = pymysql.connect(host=host, port=port, db=db, user=user, password=password)
         return conn
 
@@ -177,5 +178,5 @@ u ū ú ǔ ù
             word = line.split('\t')[0]
             self.crawlerExactPhrasePinyin(word)
 if __name__ == "__main__":
-    CloverPinyinBuild().crawlerExactPhrasePinyin()
+    CloverPinyinBuild().crawlerPhraseDict()
     #CloverPinyinBuild().getPlainPinyin("guà hào")
