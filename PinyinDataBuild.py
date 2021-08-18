@@ -24,6 +24,7 @@ class PinyinDataBuild:
         self.loadHomograph()
         self.loadLargePinyinDict()
         self.loadSingleCharacterDict()
+        print(self.homographWeightDict["弄"])
         if self.jieba_dict:
             for word in self.jiebaSet:
                 self.jieba_dict.write(f"{word}\n")
@@ -251,7 +252,7 @@ u ū ú ǔ ù
                     pinyins[word].append(maxPinyinData[0])
 
     def getPinyin(self, sentence, heterograph=False):
-        seg_list = jieba.cut_for_search(sentence) #默认是精确模式
+        seg_list = jieba.cut(sentence) #默认是精确模式
         lines = ",".join(seg_list)
         pinyins = dict()
         for word in lines.split(","):
@@ -281,7 +282,8 @@ u ū ú ǔ ù
 
 if __name__ == "__main__":
     #PinyinDataBuild().fixesPinyin()
-    PinyinDataBuild().getPinyin(sentence="弹出")
+    pinyin = PinyinDataBuild(loadJieba=False).getPinyin(sentence="弹弄")
+    print(pinyin)
     lines = '''α射线
     α粒子
     β射线
