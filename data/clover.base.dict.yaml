@@ -1,23 +1,3 @@
-
-# Rime 字典
-# encoding: utf-8
-#
-# 该字典生成的项目地址： https://github.com/fkxxyz/clover-dict-gen
-#
-# 所有文字的频率
-# 生成自以下两个项目项目
-#     结巴分词 https://github.com/fxsjy/jieba
-#     rime 八股文 https://github.com/rime/rime-essay
-#     袖珍简化字拼音 https://github.com/rime/rime-pinyin-simp
-# 注音生成自 pypinyin 项目
-#     https://github.com/mozillazg/python-pinyin
-#
-
----
-name: clover.base
-version: "1.0.0"
-sort: by_weight
-...
 的	de	99.97%
 的	di	0.03%
 了	le	98.90%
