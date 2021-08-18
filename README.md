@@ -5,7 +5,7 @@
 
 基于 `luna_pinyin\pypinyin\clover-pinyin` 数据。（共提供50W左右拼音数据）
 
-基于 [百度汉语数据](123)(共抓取35W词组拼音数据) 。
+基于 [百度汉语数据](https://hanyu.baidu.com/)(共抓取35W词组拼音数据) 。
 
 基于 jieba分词工具。
 
