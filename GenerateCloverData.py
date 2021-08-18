@@ -309,7 +309,4 @@ def fixesBigDictErrors():
 
 
 if __name__ == "__main__":
-    #fixes_unique_with_same_word()
-    #fixesBigDictErrorsWithMultiplePinyin()
-    #fixes_unique_with_same_pinyin()
     fixesBigDictErrors()
