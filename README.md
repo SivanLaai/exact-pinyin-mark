@@ -3,12 +3,11 @@
 
 将汉字转为拼音。
 
-基于 `luna_pinyin\pypinyin\clover-pinyin数据` 开发。（共提供50W左右拼音数据）
+基于 `luna_pinyin\pypinyin\clover-pinyin` 数据。（共提供50W左右拼音数据）
 
 基于 [百度汉语数据](123)(共抓取35W词组拼音数据) 。
 
 基于 jieba分词工具。
-.. contents::
 
 特性
 ----
