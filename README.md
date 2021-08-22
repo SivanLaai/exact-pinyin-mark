@@ -99,3 +99,4 @@ python PinyinDataCrawler.py
 
 - 因为数据量过大，爬虫的抓取时间可能需要1到2天，需要保证程序的正常运行。
 - 先配置好mysql。
+# BaiduHanyuCrawler
