@@ -1,17 +1,10 @@
 import os
-import time
-import random
-import requests
-import json
-import execjs
-from lxml import etree
-from io import StringIO, BytesIO
-from urllib.parse import unquote, quote
-import pymysql
-from Logger import logger
-from Config import config
 import jieba
+from PinyinConfig import pinyin_config
 from opencc import OpenCC
+
+
+root_dir = pinyin_config["PROGRAM"]["ROOT"]
 class PinyinDataBuild:
     homographWeightDict = dict()
     phrasePinyinDict = dict()
@@ -19,7 +12,7 @@ class PinyinDataBuild:
     def __init__(self, loadJieba=False):
         self.jieba_dict = None
         if loadJieba:
-            self.jieba_dict = open('./data/jieba.dict', 'w', encoding='utf8')
+            self.jieba_dict = open(root_dir + '/data/jieba.dict', 'w', encoding='utf8')
             self.jiebaSet = set()
         self.loadSingleCharacterDict()
         self.loadLargePinyinDict()
@@ -30,10 +23,10 @@ class PinyinDataBuild:
                 self.jieba_dict.write(f"{word}\n")
                 self.jieba_dict.flush()
             self.jieba_dict.close()
-            jieba.load_userdict('./data/jieba.dict')
+            jieba.load_userdict(root_dir + '/data/jieba.dict')
 
     def loadSinglePinyinDict(self):
-        for data in open('data/pinyin.txt', 'r'):
+        for data in open(root_dir + '/data/pinyin.txt', 'r'):
             if '#' in data[0]:
                 continue
             datas = data.strip().split(": ")[-1].split("  # ")
@@ -55,7 +48,7 @@ class PinyinDataBuild:
                 self.homographWeightDict[word]["pinyins"].append(pinyin)
 
     def loadLargePinyinDict(self):
-        for data in open('data/large_pinyin.txt', 'r'):
+        for data in open(root_dir + '/data/large_pinyin.txt', 'r'):
             if '#' in data:
                 continue
             datas = data.strip().split(": ")
@@ -79,7 +72,7 @@ class PinyinDataBuild:
                 self.jiebaSet.add(word)
 
     def loadSingleCharacterDict(self):
-        for data in open('data/single_character_info.txt', 'r'):
+        for data in open(root_dir + '/data/single_character_info.txt', 'r'):
             datas = data.strip().replace('"', '').split("\t")
             if len(datas) >= 3:
                 word = datas[1]
@@ -102,7 +95,7 @@ class PinyinDataBuild:
                     self.jiebaSet.add(datas[1])
 
     def loadHomograph(self):
-        f = open("./data/luna_pinyin.dict.yaml", "r", encoding='utf8')
+        f = open(root_dir + "/data/luna_pinyin.dict.yaml", "r", encoding='utf8')
         cc = OpenCC('t2s')
         for line in f.readlines():
             datas = line.strip().split('\t')
@@ -125,7 +118,7 @@ class PinyinDataBuild:
 
                 if self.jieba_dict:
                     self.jiebaSet.add(word)
-        for line in open("./data/clover.base.dict.yaml", "r", encoding='utf8'):
+        for line in open(root_dir + "/data/clover.base.dict.yaml", "r", encoding='utf8'):
             if '\t' in line:
                 datas = line.strip().split('\t')
                 word = datas[0]
@@ -139,74 +132,7 @@ class PinyinDataBuild:
                 if "weight" not in self.homographWeightDict[word]:
                     self.homographWeightDict[word]["weight"] = list()
                 self.homographWeightDict[word]["weight"].append(weight)
-        #word = "的"
-        #print(self.homographWeightDict[word])
 
-    def getHomograph(self, word="不"):
-        return self.homographWeightDict.get(word, dict())
-
-    # 把所有的多音字进行识别
-    def splitHomograph(self, path='./Clover四叶草拼音', newPath='./Clover四叶草拼音new'):
-        if not os.path.exists(newPath):
-            os.mkdir(f'{newPath}')
-
-        for file_now in os.listdir(path):
-            new_file_path = os.path.join(newPath, file_now)
-            curr_path = os.path.join(path, file_now)
-            new_file = open(new_file_path, 'w', encoding="utf-8")
-            if 'base' not in curr_path:
-                continue
-            for line in open(curr_path, encoding='utf-8'):
-                if "\t" in line:
-                    keyword = line.split('\t')[0]
-                    pinyin_old = line.split('\t')[1].strip()
-                    count_str = line.split('\t')[-1].strip().replace(" ", '')
-                    pinyinDict = self.getHomograph(keyword)
-                    if len(pinyinDict) == 0:
-                        new_file.write(line)
-                        new_file.flush()
-                    else:
-                        currPinyins = sorted(pinyinDict.items(), key=lambda x: x[1], reverse=True)
-                        for currPinyin in currPinyins:
-                            try:
-                                newLine = line.replace(pinyin_old, currPinyin[0]).replace(count_str, currPinyin[1])
-                                new_file.write(newLine)
-                                new_file.flush()
-                            except Exception as e:
-                                print(e)
-                else:
-                    new_file.write(line)
-                    new_file.flush()
-            new_file.close()
-
-    def getConnection(self):
-        host = config["MYSQL"]["HOST"]
-        port = int(config["MYSQL"]["PORT"])
-        db = config["MYSQL"]["DATA_BASE_NAME"]
-        user = config["MYSQL"]["USERNAME"]
-        password = config["MYSQL"]["PASSWORD"]
-        conn = pymysql.connect(host=host, port=port, db=db, user=user, password=password)
-        return conn
-
-    def fixesPinyin(self):
-        sql_str = "select * from single_character_info where pinyin not like '% %'"
-        conn = self.getConnection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute(sql_str)
-        datas = cursor.fetchall()
-        #logger.info(f'getCurrCharacterStoreIndex datas = {datas}')
-        for data in datas:
-            try:
-                old_pinyin = data["pinyin"]
-                word = data["word"]
-                pinyin = self.markPinyin(data["pinyin"])
-                plain_pinyin = self.markPinyin(data["pinyin"], plain=True)
-                sql_str = f"update single_character_info set pinyin='{pinyin}', plainPinyin='{plain_pinyin}' where pinyin = '{old_pinyin}' and word = '{word}'"
-                #print(sql_str)
-                #cursor.execute(sql_str)
-                #conn.commit()
-            except Exception as e:
-                print(e)
 
     def getPlainPinyin(self, pinyin):
         shengdiao = '''a ā á ǎ à
@@ -338,56 +264,18 @@ u ū ú ǔ ù
                             if maxWeight < float(weights[i]):
                                 maxWeight = float(weights[i])
                                 maxPinyinIndex = i
-                        pinyins.append(self.homographWeightDict[curr][pinyinType][maxPinyinIndex])
+                        pinyins.append([self.homographWeightDict[curr][pinyinType][maxPinyinIndex]])
 
     def getPinyin(self, sentence, homograph=False, plain=True):
         seg_list = jieba.cut(sentence) #默认是精确模式
         lines = ",".join(seg_list)
-        #print(lines)
+        print(lines)
         pinyins = list()
         for word in lines.split(","):
             self.matchPinyin(word, pinyins, homograph, plain)
         return pinyins
 
 if __name__ == "__main__":
-    #PinyinDataBuild().fixesPinyin()
     sentence = "什么什么样的人就会做什么样的事"
-    pinyin = PinyinDataBuild(loadJieba=False).getPinyin(sentence=sentence, homograph=True, plain=False)
+    pinyin = PinyinDataBuild(loadJieba=False).getPinyin(sentence=sentence, homograph=False, plain=True)
     print(pinyin)
-    lines = '''α射线
-    α粒子
-    β射线
-    β粒子
-    γ刀
-    γ射线
-    剞
-    口音
-    后生
-    外面
-    威廉退尔
-    孩儿
-    尾宿
-    开山
-    支派
-    敷衍
-    来往
-    江湖
-    泼洒
-    的话
-    苦头
-    角宿
-    觖望
-    觜宿
-    说法
-    跰
-    轸宿
-    阿兰德隆
-    隔断
-    飘洒
-    㑌儴
-    䒷蒌
-    䓮䕅
-    䖮虫
-    䰀鬌
-    䵚黍
-    '''
