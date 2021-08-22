@@ -129,5 +129,6 @@ dmypy.json
 .pyre/
 FundCrawler
 setting.ini
+pinyin_setting.ini
 Clover四叶草拼音new
 nohup.out
