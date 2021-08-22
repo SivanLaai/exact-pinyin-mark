@@ -6904,10 +6904,10 @@
 乇	tuo	29.47%
 乇	zhe	70.53%
 么	ma	0.04%
-么	me	1%
-么	yao	98.93%
-义	cha	99%
-义	yi	1%
+么	me	98.93%
+么	yao	1%
+义	cha	1%
+义	yi	99%
 之	zhi
 乌	wu
 乍	zha
@@ -6937,8 +6937,8 @@
 乞	qi
 也	ye
 习	xi
-乡	xiang	0%
-乡	yuan
+乡	xiang	100%
+乡	yuan	0%
 乢	gai
 乢	ge
 乢	he
@@ -6991,9 +6991,9 @@
 亍	yu	0%
 于	xu	0%
 于	yu	100%
-亏	kui	0%
-亏	xu
-亏	yu
+亏	kui	100%
+亏	xu	0%
+亏	yu	0%
 亐	yu
 云	yun
 互	hu
@@ -7043,10 +7043,10 @@
 亰	jing	100%
 亰	yuan	0%
 亱	ye
-亲	qin	0%
-亲	qing	0%
-亲	xin	10%
-亲	zhen	90%
+亲	qin	90%
+亲	qing	10%
+亲	xin	0%
+亲	zhen	0%
 亳	bo
 亴	you
 亵	xie
@@ -7070,8 +7070,8 @@
 仂	li
 仃	ding
 仄	ze
-仅	fu	100%
-仅	jin	0%
+仅	fu	0%
+仅	jin	100%
 仆	fu
 仆	pu
 仇	chou	83.84%
@@ -7871,8 +7871,8 @@
 儼	yan
 儽	lei
 儾	nang
-儿	er	0%
-儿	ren	100%
+儿	er	100%
+儿	ren	0%
 兀	wu
 允	yun
 兂	zan
@@ -7963,8 +7963,8 @@
 円	yuan
 冇	mao
 冇	mou
-冈	gang	0%
-冈	wang
+冈	gang	100%
+冈	wang	0%
 冉	ran
 冊	ce	100%
 冊	chai	0%
@@ -8587,8 +8587,8 @@
 卿	qing
 厀	xi
 厂	an	0.05%
-厂	chang	0.05%
-厂	han	99.95%
+厂	chang	99.95%
+厂	han	0.05%
 厂	yan	0.05%
 厃	wei
 厃	yan
@@ -8756,8 +8756,8 @@
 叵	ju	0%
 叵	po	100%
 叵	pou	0%
-叶	xie	100%
-叶	ye	0%
+叶	xie	0%
+叶	ye	100%
 号	hao
 司	si
 叹	tan
@@ -8828,9 +8828,9 @@
 吪	e
 含	han	100%
 含	hen	0%
-听	ting	1%
+听	ting	98%
 听	yi	1%
-听	yin	98%
+听	yin	1%
 吭	hang	27.07%
 吭	kang	0%
 吭	keng	72.93%
@@ -8930,7 +8930,7 @@
 呯	ping
 呰	zi
 呱	gu	5%
-呱	gua	100%
+呱	gua	95%
 呱	wa	0%
 呲	ci
 呲	yi
@@ -9145,8 +9145,8 @@
 唄	bei	96.29%
 唅	han
 唆	suo
-唇	chun	10%
-唇	zhen	90%
+唇	chun	90%
+唇	zhen	10%
 唈	e
 唈	yi
 唉	ai
@@ -49913,8 +49913,8 @@
 什襲珍藏	shi xi zhen cang
 什錦	shi jin
 什面	shi mian
-什麼	she me
 什麼	shen me
+什麼	she me
 什麼事情	shen me shi qing
 什麼人	shen me ren
 什麼作用	shen me zuo yong

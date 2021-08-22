@@ -21,10 +21,10 @@ class PinyinDataBuild:
         if loadJieba:
             self.jieba_dict = open('./data/jieba.dict', 'w', encoding='utf8')
             self.jiebaSet = set()
-        self.loadHomograph()
-        self.loadLargePinyinDict()
         self.loadSingleCharacterDict()
-        print(self.homographWeightDict["弄"])
+        self.loadLargePinyinDict()
+        self.loadHomograph()
+        self.loadSinglePinyinDict()
         if self.jieba_dict:
             for word in self.jiebaSet:
                 self.jieba_dict.write(f"{word}\n")
@@ -32,26 +32,72 @@ class PinyinDataBuild:
             self.jieba_dict.close()
             jieba.load_userdict('./data/jieba.dict')
 
+    def loadSinglePinyinDict(self):
+        for data in open('data/pinyin.txt', 'r'):
+            if '#' in data[0]:
+                continue
+            datas = data.strip().split(": ")[-1].split("  # ")
+            pinyins = datas[0].split(",")
+            word = datas[1]
+            if word not in self.homographWeightDict:
+                self.homographWeightDict[word] = dict()
+            if "pinyins" not in self.homographWeightDict[word]:
+                self.homographWeightDict[word]["pinyins"] = list()
+            if "plainPinyins" not in self.homographWeightDict[word]:
+                self.homographWeightDict[word]["plainPinyins"] = list()
+            if "weight" not in self.homographWeightDict[word]:
+                self.homographWeightDict[word]["weight"] = list()
+            for pinyin in pinyins:
+                plainPinyin = self.getPlainPinyin(pinyin)
+                if plainPinyin not in self.homographWeightDict[word]["plainPinyins"]:
+                    self.homographWeightDict[word]["plainPinyins"].append(plainPinyin)
+                    self.homographWeightDict[word]["weight"].append("1")
+                self.homographWeightDict[word]["pinyins"].append(pinyin)
+
     def loadLargePinyinDict(self):
         for data in open('data/large_pinyin.txt', 'r'):
             if '#' in data:
                 continue
             datas = data.strip().split(": ")
-            if datas[0] not in self.phrasePinyinDict:
-                self.phrasePinyinDict[datas[0]] = list()
-            currDict = {"pinyin": datas[1], "plainPinyin": self.getPlainPinyin(datas[1])}
-            self.phrasePinyinDict[datas[0]].append(currDict)
+            word = datas[0]
+            pinyin = datas[1]
+            plainPinyin = self.getPlainPinyin(pinyin)
+
+            if word not in self.phrasePinyinDict:
+                self.phrasePinyinDict[word] = dict()
+            if "pinyins" not in self.phrasePinyinDict[word]:
+                self.phrasePinyinDict[word]["pinyins"] = list()
+            if "plainPinyins" not in self.phrasePinyinDict[word]:
+                self.phrasePinyinDict[word]["plainPinyins"] = list()
+
+            if pinyin not in self.phrasePinyinDict[word]["pinyins"]:
+                self.phrasePinyinDict[word]["pinyins"].append(pinyin)
+            if plainPinyin not in self.phrasePinyinDict[word]["plainPinyins"]:
+                self.phrasePinyinDict[word]["plainPinyins"].append(plainPinyin)
+
             if self.jieba_dict:
-                self.jiebaSet.add(datas[0])
+                self.jiebaSet.add(word)
 
     def loadSingleCharacterDict(self):
         for data in open('data/single_character_info.txt', 'r'):
             datas = data.strip().replace('"', '').split("\t")
             if len(datas) >= 3:
-                if datas[1] not in self.phrasePinyinDict:
-                    self.phrasePinyinDict[datas[1]] = list()
-                currDict = {"pinyin": datas[0], "plainPinyin": datas[2]}
-                self.phrasePinyinDict[datas[1]].append(currDict)
+                word = datas[1]
+                pinyin = datas[0]
+                plainPinyin = datas[2]
+
+                if word not in self.phrasePinyinDict:
+                    self.phrasePinyinDict[word] = dict()
+                if "pinyins" not in self.phrasePinyinDict[word]:
+                    self.phrasePinyinDict[word]["pinyins"] = list()
+                if "plainPinyins" not in self.phrasePinyinDict[word]:
+                    self.phrasePinyinDict[word]["plainPinyins"] = list()
+
+                if pinyin not in self.phrasePinyinDict[word]["pinyins"]:
+                    self.phrasePinyinDict[word]["pinyins"].append(pinyin)
+                if plainPinyin not in self.phrasePinyinDict[word]["plainPinyins"]:
+                    self.phrasePinyinDict[word]["plainPinyins"].append(plainPinyin)
+
                 if self.jieba_dict:
                     self.jiebaSet.add(datas[1])
 
@@ -67,20 +113,34 @@ class PinyinDataBuild:
                 word = cc.convert(word)
             pinyin = datas[1]
             if len(word) > 1:
+                plainPinyin = self.getPlainPinyin(pinyin)
+
                 if word not in self.phrasePinyinDict:
-                    self.phrasePinyinDict[word] = list()
-                currDict = {"pinyin": "", "plainPinyin": pinyin}
-                self.phrasePinyinDict[word].append(currDict)
+                    self.phrasePinyinDict[word] = dict()
+                if "plainPinyins" not in self.phrasePinyinDict[word]:
+                    self.phrasePinyinDict[word]["plainPinyins"] = list()
+
+                if plainPinyin not in self.phrasePinyinDict[word]["plainPinyins"]:
+                    self.phrasePinyinDict[word]["plainPinyins"].append(plainPinyin)
+
                 if self.jieba_dict:
                     self.jiebaSet.add(word)
-
-            if word not in self.homographWeightDict:
-                self.homographWeightDict[word] = dict()
-            if len(datas) == 3:
+        for line in open("./data/clover.base.dict.yaml", "r", encoding='utf8'):
+            if '\t' in line:
+                datas = line.strip().split('\t')
+                word = datas[0]
+                pinyin = datas[1]
                 weight = datas[2]
-                self.homographWeightDict[word][pinyin] = weight
-            else:
-                self.homographWeightDict[word][pinyin] = '100%'
+                if word not in self.homographWeightDict:
+                    self.homographWeightDict[word] = dict()
+                if "plainPinyins" not in self.homographWeightDict[word]:
+                    self.homographWeightDict[word]["plainPinyins"] = list()
+                self.homographWeightDict[word]["plainPinyins"].append(pinyin)
+                if "weight" not in self.homographWeightDict[word]:
+                    self.homographWeightDict[word]["weight"] = list()
+                self.homographWeightDict[word]["weight"].append(weight)
+        #word = "的"
+        #print(self.homographWeightDict[word])
 
     def getHomograph(self, word="不"):
         return self.homographWeightDict.get(word, dict())
@@ -166,7 +226,7 @@ u ū ú ǔ ù
                 plain_pinyin += curr
             else:
                 plain_pinyin += shengdiaoToPlain[curr]
-        pinyin = plain_pinyin
+        pinyin = plain_pinyin.replace('ü', 'v')
         return pinyin
 
     def markPinyin(self, pinyin, plain=False):
@@ -226,13 +286,15 @@ u ū ú ǔ ù
                     plain_pinyin += curr
                 else:
                     plain_pinyin += shengdiaoToPlain[curr]
-            pinyin = plain_pinyin
+            pinyin = plain_pinyin.replace('ü', 'v')
         return pinyin
 
-    def matchPinyin(self, word, pinyins):
+    def matchPinyin1(self, word, pinyins, homograph=False, plain=True):
+        pinyinType = "plainPinyins"
+        if not plain:
+            pinyinType = "pinyins"
         if word in self.phrasePinyinDict:
-            pinyinDatas = self.phrasePinyinDict[word][0]["plainPinyin"].split(" ")
-            #print(pinyinDatas)
+            pinyinDatas = self.phrasePinyinDict[word][pinyinType]
             for i in range(len(pinyinDatas)):
                 if word not in pinyins:
                     pinyins[word] = list()
@@ -240,49 +302,57 @@ u ū ú ǔ ù
         else:
             for curr in word:
                 if curr in self.homographWeightDict:
-                    pinyinDatas = self.homographWeightDict[curr].items()
-                    maxPinyinData = None
-                    for pinyinData in pinyinDatas:
-                        if maxPinyinData is None:
-                            maxPinyinData = pinyinData
-                        elif '%' in pinyinData[1] and float(maxPinyinData[1][:-1]) < float(pinyinData[1][:-1]):
-                            maxPinyinData = pinyinData
-                    if word not in pinyins:
-                        pinyins[word] = list()
-                    pinyins[word].append(maxPinyinData[0])
+                    if curr not in pinyins:
+                        pinyins[curr] = list()
+                    if homograph:
+                        pinyins[curr].append(self.homographWeightDict[curr][pinyinType])
+                    else:
+                        maxPinyinIndex = 0
+                        maxWeight = 0
+                        weights = self.homographWeightDict[curr]["weight"]
+                        for i in range(len(weights)):
+                            if maxWeight < float(weights[i]):
+                                maxWeight = float(weights[i])
+                                maxPinyinIndex = i
+                        if curr not in pinyins:
+                            pinyins[curr] = list()
+                        pinyins[curr].append(self.homographWeightDict[curr][pinyinType][maxPinyinIndex])
 
-    def getPinyin(self, sentence, heterograph=False):
+    def matchPinyin(self, word, pinyins, homograph=False, plain=True):
+        pinyinType = "plainPinyins"
+        if not plain:
+            pinyinType = "pinyins"
+        if word in self.phrasePinyinDict:
+            pinyinDatas = self.phrasePinyinDict[word][pinyinType]
+            pinyins.append(pinyinDatas)
+        else:
+            for curr in word:
+                if curr in self.homographWeightDict:
+                    if homograph:
+                        pinyins.append(self.homographWeightDict[curr][pinyinType])
+                    else:
+                        maxPinyinIndex = 0
+                        maxWeight = 0
+                        weights = self.homographWeightDict[curr]["weight"]
+                        for i in range(len(weights)):
+                            if maxWeight < float(weights[i]):
+                                maxWeight = float(weights[i])
+                                maxPinyinIndex = i
+                        pinyins.append(self.homographWeightDict[curr][pinyinType][maxPinyinIndex])
+
+    def getPinyin(self, sentence, homograph=False, plain=True):
         seg_list = jieba.cut(sentence) #默认是精确模式
         lines = ",".join(seg_list)
-        pinyins = dict()
+        #print(lines)
+        pinyins = list()
         for word in lines.split(","):
-            self.matchPinyin(word, pinyins)
-        words = list()
-        pinyinList = list()
-        for word in pinyins:
-            if len(word) != len(pinyins[word]):
-                curr_pinyins = dict()
-                for w in word:
-                    self.matchPinyin(w, curr_pinyins)
-                words.extend(curr_pinyins.keys())
-                for wPinyin in curr_pinyins.values():
-                    pinyinList.extend(wPinyin)
-            else:
-                words.extend(word)
-                pinyinList.extend(pinyins[word])
-        i = 0
-        j = 0
-        finalPinyins = list()
-        while i < len(sentence) and j < len(words) and len(pinyinList) > 0:
-            if sentence[i] == words[j]:
-                i += 1
-                finalPinyins.append(pinyinList[j])
-            j += 1
-        return finalPinyins
+            self.matchPinyin(word, pinyins, homograph, plain)
+        return pinyins
 
 if __name__ == "__main__":
     #PinyinDataBuild().fixesPinyin()
-    pinyin = PinyinDataBuild(loadJieba=False).getPinyin(sentence="弹弄")
+    sentence = "什么什么样的人就会做什么样的事"
+    pinyin = PinyinDataBuild(loadJieba=False).getPinyin(sentence=sentence, homograph=True, plain=False)
     print(pinyin)
     lines = '''α射线
     α粒子

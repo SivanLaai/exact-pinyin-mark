@@ -95,32 +95,6 @@ def fixes_unique():
                 f.write(f'[{node[0]}, {node[1]}] ')
             f.write(f'\n')
 
-# 词组一样的去重
-def fixes_unique_with_same_word():
-    path = './Clover四叶草拼音'
-    new_path = './Clover四叶草拼音new'
-    if not os.path.exists(new_path):
-        os.mkdir(f'{new_path}')
-    files_list = os.listdir(path)
-    wordDict = set()
-    repeat_count = 0
-
-    for i in range(len(files_list)):
-        curr_path = os.path.join(path, files_list[i])
-        new_file_path = os.path.join(new_path, files_list[i])
-        new_file = open(new_file_path, 'w', encoding="utf-8")
-
-        for line in open(curr_path, 'r', encoding='utf-8'):
-            if '\t' in line:
-                keyword = line.split('\t')[0]
-                pinyin = line.split('\t')[1].replace(' ', '').strip()
-                key = keyword
-                if key not in wordDict:
-                    new_file.write(line)
-                    wordDict.add(key)
-            else:
-                new_file.write(line)
-
 # 词频不一样的去重
 def fixes_unique_with_same_pinyin():
     path = './Clover四叶草拼音'
@@ -147,6 +121,59 @@ def fixes_unique_with_same_pinyin():
             else:
                 new_file.write(line)
 
+def generateNewBaseDict():
+    f = open('./data/clover.base.dict.yaml', 'w')
+    homographDict = statisticHomograph()
+    for line in open('./data/clover.base-back.dict.yaml', 'r'):
+        if '\t' not in line:
+            f.write(line)
+            f.flush()
+        else:
+            line = line.strip()
+            keyword = line.split('\t')[0]
+            if keyword in homographDict:
+                countStr = line.split('\t')[2]
+                oldPinyin = line.split('\t')[1]
+                count = float(countStr)
+                sumCount = sum([int(num) for num in homographDict[keyword].values()])
+                for pinyin in homographDict[keyword]:
+                    newCount = 1
+                    if sumCount != 0:
+                        newCount = int(count * float(homographDict[keyword][pinyin]) / sumCount)
+                    if newCount == 0:
+                        newCount = 1
+                    newCountStr = str(newCount)
+                    newLine = line.replace(oldPinyin, pinyin).replace(countStr, newCountStr)
+                    f.write(newLine + '\n')
+                    f.flush()
+            else:
+                f.write(line + '\n')
+                f.flush()
+
+
+# 统计所有词汇表中多音字的出现频率
+def statisticHomograph():
+    homoDict = pdb.homographWeightDict
+    homoStatisticDict = dict()
+    for homo in homoDict:
+        if len(homo) == 1 and  len(homoDict[homo]["plainPinyins"]) >= 2:
+            if homo not in homoStatisticDict:
+                homoStatisticDict[homo] = dict()
+            for plainPinyin in homoDict[homo]["plainPinyins"]:
+                    homoStatisticDict[homo][plainPinyin] = homoStatisticDict[homo].get(plainPinyin, 0)
+    for word in pdb.phrasePinyinDict:
+        for w in word:
+            if w in homoStatisticDict:
+                plainPinyins = pdb.phrasePinyinDict[word]["plainPinyins"]
+                for plainPinyin in plainPinyins:
+                    plains = plainPinyin.split(" ")
+                    if len(plains) <= 1:
+                        continue
+                    for currPinyin in homoStatisticDict[w].keys():
+                        if currPinyin in plainPinyin:
+                            homoStatisticDict[w][currPinyin] = homoStatisticDict[w].get(currPinyin, 0) + 1
+    return homoStatisticDict
+
 # 得到所有正确的汉字拼音标识
 def getBasicWordMap():
     wordMap = dict()
@@ -163,7 +190,9 @@ def getBasicWordMap():
 
 def getPinyin(keyword):
     #print(keyword)
-    return pdb.getPinyin(keyword)
+    pinyins = pdb.getPinyin(keyword)
+    #print(pinyins)
+    return pinyins
 
 
 BasicWordMap = getBasicWordMap()
@@ -216,7 +245,7 @@ def helpPinyin(pinyinList, pinyins, currPinyin, step, index, firstPinyin):
         ele = list()
         for curr in currPinyin:
             ele.append(curr)
-        pinyins.append([ele, firstPinyin])
+        pinyins.append(ele)
         return
     for curr_index in range(len(pinyinList[step])):
         currPinyin.append(pinyinList[step][curr_index])
@@ -224,14 +253,20 @@ def helpPinyin(pinyinList, pinyins, currPinyin, step, index, firstPinyin):
         currPinyin.pop()
 
 def generatePinyins(keyword):
-    pinyinList = pinyin(keyword, style=Style.NORMAL, heteronym=True)
+    #pinyinList = pinyin(keyword, style=Style.NORMAL, heteronym=True)
     pinyins = list()
-    currPinyin = list()
-    firstPinyin = 1
-    for curr_index in range(len(pinyinList[0])):
-        currPinyin.append(pinyinList[0][curr_index])
-        helpPinyin(pinyinList, pinyins, currPinyin, 1, curr_index, firstPinyin)
-        currPinyin.pop()
+    try:
+        pinyinList = getPinyin(keyword)
+        currPinyin = list()
+        firstPinyin = 1
+        for curr_index in range(len(pinyinList[0])):
+            currPinyin.append(pinyinList[0][curr_index])
+            helpPinyin(pinyinList, pinyins, currPinyin, 1, curr_index, firstPinyin)
+            currPinyin.pop()
+       # print(pinyins)
+    except Exception as e:
+        print(keyword)
+        print(e)
     return pinyins
 # 对所有的词组进行多音字拆分，然后重组
 # 首先如果所有的都是命中第一个多音字的话那就是保持最高的频率，然后以10的倍数依次下降
@@ -291,16 +326,17 @@ def fixesBigDictErrors():
                 keyword = line.split('\t')[0]
                 pinyin_old = line.split('\t')[1].strip()
                 count_str = line.split('\t')[-1].strip().replace(" ", '')
-                pinyin_list = getPinyin(keyword)
+                pinyin_list = generatePinyins(keyword)
                 #print(pinyin_list)
                 if len(pinyin_list) == 0:
                     new_file.write(line)
                     new_file.flush()
                 else:
-                    currPinyin = " ".join(pinyin_list)
-                    newLine = line.replace(pinyin_old, currPinyin)
-                    new_file.write(newLine)
-                    new_file.flush()
+                    for pinyin in pinyin_list:
+                        currPinyin = " ".join(pinyin)
+                        newLine = line.replace(pinyin_old, currPinyin)
+                        new_file.write(newLine)
+                        new_file.flush()
             else:
                 new_file.write(line)
                 new_file.flush()
@@ -309,4 +345,6 @@ def fixesBigDictErrors():
 
 
 if __name__ == "__main__":
+    #generateNewBaseDict()
+    #generatePinyins("马鞍珠点弹")
     fixesBigDictErrors()
