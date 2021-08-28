@@ -5,6 +5,7 @@ from opencc import OpenCC
 
 
 root_dir = pinyin_config["PROGRAM"]["ROOT"]
+print(root_dir)
 class PinyinDataBuild:
     homographWeightDict = dict()
     phrasePinyinDict = dict()
@@ -26,7 +27,7 @@ class PinyinDataBuild:
             jieba.load_userdict(root_dir + '/data/jieba.dict')
 
     def loadSinglePinyinDict(self):
-        for data in open(root_dir + '/data/pinyin.txt', 'r'):
+        for data in open(root_dir + '/data/pinyin.txt', 'r', encoding='utf8'):
             if '#' in data[0]:
                 continue
             datas = data.strip().split(": ")[-1].split("  # ")
@@ -48,7 +49,7 @@ class PinyinDataBuild:
                 self.homographWeightDict[word]["pinyins"].append(pinyin)
 
     def loadLargePinyinDict(self):
-        for data in open(root_dir + '/data/large_pinyin.txt', 'r'):
+        for data in open(root_dir + '/data/large_pinyin.txt', 'r', encoding="utf8"):
             if '#' in data:
                 continue
             datas = data.strip().split(": ")
@@ -72,7 +73,7 @@ class PinyinDataBuild:
                 self.jiebaSet.add(word)
 
     def loadSingleCharacterDict(self):
-        for data in open(root_dir + '/data/single_character_info.txt', 'r'):
+        for data in open(root_dir + '/data/single_character_info.txt', 'r', encoding="utf-8"):
             datas = data.strip().replace('"', '').split("\t")
             if len(datas) >= 3:
                 word = datas[1]
@@ -244,13 +245,16 @@ u ū ú ǔ ù
                             pinyins[curr] = list()
                         pinyins[curr].append(self.homographWeightDict[curr][pinyinType][maxPinyinIndex])
 
-    def matchPinyin(self, word, pinyins, homograph=False, plain=True):
+    def matchPinyin(self, word, pinyins, homograph=False, phraseHomograph=True, plain=True):
         pinyinType = "plainPinyins"
         if not plain:
             pinyinType = "pinyins"
         if word in self.phrasePinyinDict:
             pinyinDatas = self.phrasePinyinDict[word][pinyinType]
-            pinyins.append(pinyinDatas)
+            if phraseHomograph:
+                pinyins.append(pinyinDatas)
+            else:
+                pinyins.append([pinyinDatas[0]])
         else:
             for curr in word:
                 if curr in self.homographWeightDict:
@@ -269,7 +273,7 @@ u ū ú ǔ ù
     def getPinyin(self, sentence, homograph=False, plain=True):
         seg_list = jieba.cut(sentence) #默认是精确模式
         lines = ",".join(seg_list)
-        print(lines)
+        #print(lines)
         pinyins = list()
         for word in lines.split(","):
             self.matchPinyin(word, pinyins, homograph, plain)
