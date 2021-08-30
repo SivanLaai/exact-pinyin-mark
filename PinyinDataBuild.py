@@ -2,10 +2,10 @@ import os
 import jieba
 from PinyinConfig import pinyin_config
 from opencc import OpenCC
-
+import PinyinStyle
 
 root_dir = pinyin_config["PROGRAM"]["ROOT"]
-print(root_dir)
+
 class PinyinDataBuild:
     homographWeightDict = dict()
     phrasePinyinDict = dict()
@@ -216,36 +216,15 @@ u ū ú ǔ ù
             pinyin = plain_pinyin.replace('ü', 'v')
         return pinyin
 
-    def matchPinyin1(self, word, pinyins, homograph=False, plain=True):
-        pinyinType = "plainPinyins"
-        if not plain:
-            pinyinType = "pinyins"
-        if word in self.phrasePinyinDict:
-            pinyinDatas = self.phrasePinyinDict[word][pinyinType]
-            for i in range(len(pinyinDatas)):
-                if word not in pinyins:
-                    pinyins[word] = list()
-                pinyins[word].append(pinyinDatas[i])
-        else:
-            for curr in word:
-                if curr in self.homographWeightDict:
-                    if curr not in pinyins:
-                        pinyins[curr] = list()
-                    if homograph:
-                        pinyins[curr].append(self.homographWeightDict[curr][pinyinType])
-                    else:
-                        maxPinyinIndex = 0
-                        maxWeight = 0
-                        weights = self.homographWeightDict[curr]["weight"]
-                        for i in range(len(weights)):
-                            if maxWeight < float(weights[i]):
-                                maxWeight = float(weights[i])
-                                maxPinyinIndex = i
-                        if curr not in pinyins:
-                            pinyins[curr] = list()
-                        pinyins[curr].append(self.homographWeightDict[curr][pinyinType][maxPinyinIndex])
-
-    def matchPinyin(self, word, pinyins, homograph=False, phraseHomograph=True, plain=True):
+    '''
+        parameters:
+        word - 所需要标注拼音的词组
+        pinyins - 存放拼音列表
+        homograph=False - 多音字
+        phraseHomograph - 短语多音字
+        plain - 拼音是否标音
+    '''
+    def matchPinyin1(self, word, pinyins, homograph=False, phraseHomograph=True, plain=True):
         pinyinType = "plainPinyins"
         if not plain:
             pinyinType = "pinyins"
@@ -270,16 +249,99 @@ u ū ú ǔ ù
                                 maxPinyinIndex = i
                         pinyins.append([self.homographWeightDict[curr][pinyinType][maxPinyinIndex]])
 
-    def getPinyin(self, sentence, homograph=False, plain=True):
+    '''
+        parameters:
+        word - 所需要标注拼音的词组
+        pinyins - 存放拼音列表
+        pinyinStyle - 拼音标注风格
+    '''
+    def matchPinyin(self, word, pinyins, pinyinStyle=PinyinStyle.PLAIN_NOTPOLYPHONE_WITH_PHRASE):
+        pinyinType = "plainPinyins"
+        if pinyinStyle > 3:
+            pinyinType = "pinyins"
+        if word in self.phrasePinyinDict:
+            pinyinDatas = self.phrasePinyinDict[word][pinyinType]
+            #print(self.phrasePinyinDict[word])
+            #if phraseHomograph:
+            if pinyinStyle in [0, 1, 4, 5, 8, 9]:
+                pinyins.append(pinyinDatas)
+            else:
+                pinyins.append([pinyinDatas[0]])
+        else:
+            for curr in word:
+                if curr in self.homographWeightDict:
+                    #if homograph:
+                    if pinyinStyle in [1, 3, 5, 7, 9, 11]:
+                        pinyins.append(self.homographWeightDict[curr][pinyinType])
+                    else:
+                        maxPinyinIndex = 0
+                        maxWeight = 0
+                        weights = self.homographWeightDict[curr]["weight"]
+                        for i in range(len(weights)):
+                            if maxWeight < float(weights[i]):
+                                maxWeight = float(weights[i])
+                                maxPinyinIndex = i
+                        pinyins.append([self.homographWeightDict[curr][pinyinType][maxPinyinIndex]])
+
+    def getMark(self, pinyin, shengdiaoToPlain):
+        plain_mark_pinyin = ''
+        tailMark = '5'
+        for curr in pinyin:
+            if curr not in shengdiaoToPlain:
+                plain_mark_pinyin += curr
+            else:
+                plain_mark_pinyin += shengdiaoToPlain[curr][0]
+                tailMark = str(shengdiaoToPlain[curr][1])
+        plain_mark_pinyin += tailMark
+        return plain_mark_pinyin
+
+    def formatMarkPinyin(self, pinyin):
+        shengdiao = '''a ā á ǎ à
+o ō ó ǒ ò
+e ē é ě è
+i ī í ǐ ì
+u ū ú ǔ ù
+ü ǖ ǘ ǚ ǜ'''
+        shengdiaoToPlain = dict()
+        for line in shengdiao.split("\n"):
+            datas = line.split(' ')
+            for i in range(len(datas)):
+                if i == 0:
+                    continue
+                shengdiaoToPlain[datas[i]] = [datas[0], i]
+        markPinyins = list()
+        for curr_pinyin in pinyin.split(" "):
+            markPinyins.append(self.getMark(curr_pinyin, shengdiaoToPlain))
+        return " ".join(markPinyins)
+
+
+
+    def formatPinyins(self, pinyins, pinyinStyle):
+        for i in range(len(pinyins)):
+            for j in range(len(pinyins[i])):
+                if pinyinStyle in [4, 5, 6, 7]:
+                    pinyins[i][j] = self.formatMarkPinyin(pinyins[i][j])
+                pinyins[i][j] = pinyins[i][j].replace('ü', 'v').lower()
+
+
+
+    '''
+        parameters:
+        word - 所需要标注拼音的词组
+        pinyins - 存放拼音列表
+        pinyinStyle - 拼音标注风格
+    '''
+    def getPinyin(self, sentence, pinyinStyle=PinyinStyle.PLAIN_NOTPOLYPHONE_WITH_PHRASE):
         seg_list = jieba.cut(sentence) #默认是精确模式
         lines = ",".join(seg_list)
         #print(lines)
         pinyins = list()
         for word in lines.split(","):
-            self.matchPinyin(word, pinyins, homograph, plain)
+            self.matchPinyin(word, pinyins, pinyinStyle)
+        self.formatPinyins(pinyins, pinyinStyle)
         return pinyins
 
 if __name__ == "__main__":
-    sentence = "什么什么样的人就会做什么样的事"
-    pinyin = PinyinDataBuild(loadJieba=False).getPinyin(sentence=sentence, homograph=False, plain=True)
+    sentence = "弹出式"
+    pinyin = PinyinDataBuild(loadJieba=False).getPinyin(sentence=sentence)
     print(pinyin)
