@@ -260,7 +260,12 @@ u ū ú ǔ ù
         if pinyinStyle > 3:
             pinyinType = "pinyins"
         if word in self.phrasePinyinDict:
-            pinyinDatas = self.phrasePinyinDict[word][pinyinType]
+            pinyinDatas = list()
+            if pinyinType in self.phrasePinyinDict[word]:
+                pinyinDatas = self.phrasePinyinDict[word][pinyinType]
+            if len(pinyinDatas) == 0:
+                pinyins.append(pinyinDatas)
+                return
             #print(self.phrasePinyinDict[word])
             #if phraseHomograph:
             if pinyinStyle in [0, 1, 4, 5, 8, 9]:
@@ -271,8 +276,14 @@ u ū ú ǔ ù
             for curr in word:
                 if curr in self.homographWeightDict:
                     #if homograph:
+                    pinyinDatas = list()
+                    if pinyinType in self.homographWeightDict[curr]:
+                        pinyinDatas = self.homographWeightDict[curr][pinyinType]
+                    if len(pinyinDatas) == 0:
+                        pinyins.append(pinyinDatas)
+                        continue
                     if pinyinStyle in [1, 3, 5, 7, 9, 11]:
-                        pinyins.append(self.homographWeightDict[curr][pinyinType])
+                        pinyins.append(pinyinDatas)
                     else:
                         maxPinyinIndex = 0
                         maxWeight = 0
@@ -281,7 +292,7 @@ u ū ú ǔ ù
                             if maxWeight < float(weights[i]):
                                 maxWeight = float(weights[i])
                                 maxPinyinIndex = i
-                        pinyins.append([self.homographWeightDict[curr][pinyinType][maxPinyinIndex]])
+                        pinyins.append([pinyinDatas[maxPinyinIndex]])
 
     def getMark(self, pinyin, shengdiaoToPlain):
         plain_mark_pinyin = ''
@@ -312,7 +323,7 @@ u ū ú ǔ ù
         markPinyins = list()
         for curr_pinyin in pinyin.split(" "):
             markPinyins.append(self.getMark(curr_pinyin, shengdiaoToPlain))
-        return " ".join(markPinyins)
+        return " ".join(markPinyins).replace('ü', 'v').lower()
 
 
 
@@ -321,7 +332,7 @@ u ū ú ǔ ù
             for j in range(len(pinyins[i])):
                 if pinyinStyle in [4, 5, 6, 7]:
                     pinyins[i][j] = self.formatMarkPinyin(pinyins[i][j])
-                pinyins[i][j] = pinyins[i][j].replace('ü', 'v').lower()
+                pinyins[i][j] = pinyins[i][j]
 
 
 
@@ -331,7 +342,7 @@ u ū ú ǔ ù
         pinyins - 存放拼音列表
         pinyinStyle - 拼音标注风格
     '''
-    def getPinyin(self, sentence, pinyinStyle=PinyinStyle.PLAIN_NOTPOLYPHONE_WITH_PHRASE):
+    def getPinyin(self, sentence, pinyinStyle=PinyinStyle.PLAINMARK_POLYPHONE_WITH_PHRASE):
         seg_list = jieba.cut(sentence) #默认是精确模式
         lines = ",".join(seg_list)
         #print(lines)
